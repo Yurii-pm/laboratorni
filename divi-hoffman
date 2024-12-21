@@ -1,0 +1,95 @@
+import random
+
+# Алгоритм Міллера — Рабіна для перевірки простоти числа
+def is_prime(n, k=10):
+    if n <= 1:
+        return False
+    if n == 2 or n == 3:
+        return True
+    if n % 2 == 0:
+        return False
+
+    # Розкладаємо n-1 на 2^r * d
+    r, d = 0, n - 1
+    while d % 2 == 0:
+        r += 1
+        d //= 2
+
+    # k раундів тесту
+    for _ in range(k):
+        a = random.randint(2, n - 2)
+        x = pow(a, d, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+# Генерація безпечних простих чисел p та q
+def generate_safe_primes(bits=512):
+    while True:
+        p = random.getrandbits(bits)
+        p |= (1 << bits - 1) | 1  # Забезпечуємо, що p непарне та має потрібну довжину
+        if is_prime(p):
+            q = (p - 1) // 2
+            if is_prime(q):
+                return p, q
+
+# Знаходження первісного кореня для числа p
+def find_primitive_root(p):
+    if p == 2:
+        return 1  # Edge case for p=2, where 1 is considered the primitive root
+    factors = []
+    phi = p - 1
+    n = phi
+    i = 2
+    # Factorize n (phi)
+    while i * i <= n:
+        while n % i == 0:
+            factors.append(i)
+            n //= i
+        i += 1
+    if n > 1:
+        factors.append(n)
+    
+    # Find primitive root
+    for g in range(2, p):
+        is_generator = True
+        for factor in factors:
+            if pow(g, phi // factor, p) == 1:
+                is_generator = False
+                break
+        if is_generator:
+            return g
+    return None  # Return None if no primitive root is found
+
+# Алгоритм обміну ключами Діффі-Хеллмана
+def diffie_hellman(p, g):
+    # Yurii chooses a secret a and sends A = g^a mod p
+    a = random.randint(2, p - 2)
+    A = pow(g, a, p)
+
+    # Ivan chooses a secret b and sends B = g^b mod p
+    b = random.randint(2, p - 2)
+    B = pow(g, b, p)
+
+    # Yurii computes the shared secret: s = B^a mod p 
+    shared_secret_Yurii = pow(B, a, p)
+
+    # Ivan computes the shared secret: s = A^b mod p 
+    shared_secret_Ivan = pow(A, b, p)
+
+    # The shared secrets should match
+    assert shared_secret_Yurii == shared_secret_Ivan, "Shared secrets do not match!"
+    
+    return shared_secret_Yurii
+
+# Приклад використання
+p = 23  # Example prime number
+g = 5   # Example primitive root modulo p
+shared_secret = diffie_hellman(p, g)
+print(f"Shared secret: {shared_secret}")
