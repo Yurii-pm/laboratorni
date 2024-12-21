@@ -1,0 +1,68 @@
+#RSA
+
+import random
+
+def extended_gcd(a, b):
+    if b == 0:
+        return a, 1, 0
+    g, x1, y1 = extended_gcd(b, a % b)
+    x = y1
+    y = x1 - (a // b) * y1
+    return g, x, y
+
+def miller_rabin_test(n, k=5):
+    if n == 2 or n == 3:
+        return True
+    if n % 2 == 0:
+        return False
+    r, s = 0, n - 1
+    while s % 2 == 0:
+        r += 1
+        s //= 2
+    for _ in range(k):
+        a = random.randint(2, n - 2)
+        x = pow(a, s, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+def generate_prime(bits):
+    while True:
+        p = random.getrandbits(bits)
+        if miller_rabin_test(p):
+            return p
+
+def generate_rsa_keys(bits):
+    p = generate_prime(bits)
+    q = generate_prime(bits)
+    n = p * q
+    phi_n = (p - 1) * (q - 1)
+    e = 65537
+    g, d, _ = extended_gcd(e, phi_n)
+    if g != 1:
+        raise ValueError("e та phi_n повинні бути взаємно простими")
+    d = d % phi_n
+    return (e, n), (d, n)
+
+def encrypt(message, public_key):
+    e, n = public_key
+    return pow(message, e, n)
+
+def decrypt(ciphertext, private_key):
+    d, n = private_key
+    return pow(ciphertext, d, n)
+
+# Приклад використання
+public_key, private_key = generate_rsa_keys(1024)
+message = 1234567890
+ciphertext = encrypt(message, public_key)
+decrypted_message = decrypt(ciphertext, private_key)
+print(f"Original message: {message}")
+print(f"Encrypted message: {ciphertext}")
+print(f"Decrypted message: {decrypted_message}")
