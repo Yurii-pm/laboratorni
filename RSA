@@ -1,8 +1,9 @@
-#RSA
-
 import random
 
+# Завдання 1: Алгоритм Міллера — Рабіна для перевірки простоти числа
+
 def extended_gcd(a, b):
+    """Розширений алгоритм Евкліда для знаходження найбільшого спільного дільника та коефіцієнтів Безу."""
     if b == 0:
         return a, 1, 0
     g, x1, y1 = extended_gcd(b, a % b)
@@ -10,59 +11,81 @@ def extended_gcd(a, b):
     y = x1 - (a // b) * y1
     return g, x, y
 
-def miller_rabin_test(n, k=5):
-    if n == 2 or n == 3:
+def miller_rabin_test(p, k=5):
+    """Тест Міллера — Рабіна для перевірки простоти числа."""
+    if p == 2 or p == 3:
         return True
-    if n % 2 == 0:
+    if p % 2 == 0:
         return False
-    r, s = 0, n - 1
-    while s % 2 == 0:
+    r, d = 0, p - 1
+    while d % 2 == 0:
         r += 1
-        s //= 2
+        d //= 2
     for _ in range(k):
-        a = random.randint(2, n - 2)
-        x = pow(a, s, n)
-        if x == 1 or x == n - 1:
+        a = random.randint(2, p - 2)
+        x = pow(a, d, p)
+        if x == 1 or x == p - 1:
             continue
         for _ in range(r - 1):
-            x = pow(x, 2, n)
-            if x == n - 1:
+            x = pow(x, 2, p)
+            if x == p - 1:
                 break
         else:
             return False
     return True
 
+# Завдання 2: Реалізація криптосистеми RSA
+
 def generate_prime(bits):
+    """Генерація випадкового простого числа заданої довжини в бітах."""
     while True:
         p = random.getrandbits(bits)
+        if p % 2 == 0:
+            p += 1  # Переконуємось, що p непарне
         if miller_rabin_test(p):
             return p
 
 def generate_rsa_keys(bits):
+    """Генерація пари RSA ключів (відкритого та закритого)."""
     p = generate_prime(bits)
     q = generate_prime(bits)
     n = p * q
     phi_n = (p - 1) * (q - 1)
-    e = 65537
+    e = 65537  # Стандартне значення для e
     g, d, _ = extended_gcd(e, phi_n)
     if g != 1:
-        raise ValueError("e та phi_n повинні бути взаємно простими")
+        raise ValueError("e та φ(n) повинні бути взаємно простими.")
     d = d % phi_n
+    if d < 0:
+        d += phi_n
     return (e, n), (d, n)
 
 def encrypt(message, public_key):
+    """Шифрування повідомлення за допомогою відкритого ключа."""
     e, n = public_key
     return pow(message, e, n)
 
 def decrypt(ciphertext, private_key):
+    """Розшифрування повідомлення за допомогою закритого ключа."""
     d, n = private_key
     return pow(ciphertext, d, n)
 
 # Приклад використання
+
+# Завдання 1: Перевірка простоти числа
+p = 1234567890  # Приклад числа для перевірки
+is_prime = miller_rabin_test(p)
+print(f"Число {p} {'просте' if is_prime else 'складене'}.")
+
+# Завдання 2: Генерація RSA ключів та шифрування/дешифрування повідомлення
 public_key, private_key = generate_rsa_keys(1024)
+
+# Шифрування
 message = 1234567890
 ciphertext = encrypt(message, public_key)
+print(f"Зашифроване повідомлення: {ciphertext}")
+
+# Розшифрування
 decrypted_message = decrypt(ciphertext, private_key)
-print(f"Original message: {message}")
-print(f"Encrypted message: {ciphertext}")
-print(f"Decrypted message: {decrypted_message}")
+print(f"Розшифроване повідомлення: {decrypted_message}")
+
